@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="auth-container">
+  <div class="auth-box card">
+    {% if mode == 'register' %}
+      <h2>Create Account</h2>
+      <p class="auth-sub">Join Onion Forum</p>
+    {% else %}
+      <h2>Welcome Back</h2>
+      <p class="auth-sub">Log in to Onion Forum</p>
+    {% endif %}
+
+    {% if error %}
+      <div class="auth-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        {{ error }}
+      </div>
+    {% endif %}
+
+    {% if mode == 'register' and registration_disabled %}
+      <div class="auth-error">Registration is currently disabled by the administrator.</div>
+    {% else %}
+    <form method="post" action="/login" class="auth-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <input type="hidden" name="action" value="{{ 'register' if mode == 'register' else 'login' }}" />
+      
+      <label>Username
+        <input name="username" type="text" maxlength="20" required autofocus />
+      </label>
+      
+      <label>Password
+        <input name="password" type="password" minlength="10" maxlength="128" required />
+      </label>
+
+      <div class="captcha-box">
+        <label>Verification</label>
+        <img src="/captcha/{{ captcha_id }}" alt="CAPTCHA" style="border-radius: var(--radius-sm); margin-bottom: 8px; width: 200px; height: 60px; display: block;" />
+        <input type="hidden" name="captcha_id" value="{{ captcha_id }}" />
+        <input type="text" name="captcha_solution" placeholder="Type the text from image..." required />
+      </div>
+      
+      <button type="submit" class="auth-btn">
+        {{ 'Create Account' if mode == 'register' else 'Log In' }}
+      </button>
+    </form>
+    {% endif %}
+
+    <div class="auth-switch">
+      {% if mode == 'register' %}
+        Already have an account? <a href="/login?mode=login">Log in here</a>
+      {% else %}
+        {% if registration_disabled %}
+          Registration is currently closed.
+        {% else %}
+          Don't have an account? <a href="/login?mode=register">Register here</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.auth-container { display: flex; justify-content: center; padding: 60px 20px; }
+.auth-box { width: 100%; max-width: 400px; text-align: center; }
+.auth-box h2 { font-size: 1.6rem; color: #fff; margin-bottom: 4px; }
+.auth-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+.auth-error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 10px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.auth-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
+.auth-btn { width: 100%; margin-top: 8px; padding: 12px; font-size: 15px; }
+.auth-switch { margin-top: 24px; font-size: 13px; color: var(--text-muted); }
+</style>
+
+{% endblock %}

@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+forum.db
+forum.db-* 
+dist/
+build/
+node_modules/
+.git/
+.gitignore
+*.log

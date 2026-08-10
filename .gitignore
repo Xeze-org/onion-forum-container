@@ -1,0 +1,8 @@
+# Local data & secret persistence
+/data/
+/tor-data/
+.env
+
+# Rust build artifacts
+/target/
+Cargo.lock

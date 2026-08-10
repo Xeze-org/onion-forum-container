@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block content %}
+<article class="thread-view">
+  <header class="thread-header">
+    <div class="breadcrumb">
+      <a href="/">
+        <svg width="14" height="14" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        All
+      </a>
+      {% if thread['category_slug'] %}
+        <span class="sep">›</span>
+        <a href="/?cat={{ thread['category_slug'] }}">{{ thread['category_name'] }}</a>
+      {% endif %}
+    </div>
+    <h1 class="thread-title">
+      {{ thread['title'] }}
+      {% if is_admin %}
+      <form method="post" action="/admin/delete_thread" onsubmit="return confirm('Delete this thread entirely?');" style="display: inline; vertical-align: middle;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <input type="hidden" name="thread_id" value="{{ thread['id'] }}">
+        <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0; margin-left: 8px;" title="Delete Thread">
+          <svg width="20" height="20" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg>
+        </button>
+      </form>
+      {% endif %}
+    </h1>
+    <div class="thread-meta">
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M4 4h16v12H7l-3 3V4Zm2 4v2h12V8H6Zm0 4v2h8v-2H6Z"/></svg>
+        {{ thread['posts_count'] }} posts
+      </span>
+      <span class="sep">•</span>
+      <span>started {{ thread['created_at'] | int | datetimeformat }}</span>
+    </div>
+  </header>
+
+  <ol class="posts">
+    {% for p in posts %}
+      <li id="p{{ p['id'] }}" class="post">
+        <div class="post-head">
+          <div class="author-badge">
+            <span class="avatar">{{ (p['author'] or 'anon')[:1] | upper }}</span>
+            <strong class="author">{{ p['author'] or 'anon' }}</strong>
+          </div>
+          <span class="time">{{ p['created_at'] | int | datetimeformat }}</span>
+        </div>
+        <div class="content">{{ p['content'] | markdown | safe }}</div>
+
+        {# Comments #}
+        {% set post_id_str = p['id'] | string %}
+        {% if comments_map[post_id_str] is defined %}
+          {% set cmts = comments_map[post_id_str] %}
+        {% else %}
+          {% set cmts = [] %}
+        {% endif %}
+        <details class="comments" {% if cmts %}open{% endif %}>
+          <summary>
+            <svg width="14" height="14" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M4 4h16v12H7l-3 3V4Zm2 4v2h12V8H6Zm0 4v2h8v-2H6Z"/></svg>
+            {{ cmts|length }} {{ 'comment' if cmts|length == 1 else 'comments' }}
+          </summary>
+          <ol class="comment-list">
+            {% for c in cmts %}
+              <li class="comment">
+                <div class="comment-head">
+                  <strong>{{ c['author'] or 'anon' }}</strong>
+                  <span class="time">{{ c['created_at'] | int | datetimeformat }}</span>
+                </div>
+                <div class="content">{{ c['content'] | markdown | safe }}</div>
+              </li>
+            {% endfor %}
+          </ol>
+          {% if current_user %}
+          <form method="post" action="/post/{{ p['id'] }}/comment" class="comment-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <div class="comment-input-group">
+              <input name="content" maxlength="2000" placeholder="Write a comment..." required />
+              <button type="submit" class="comment-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                Comment
+              </button>
+            </div>
+          </form>
+          {% else %}
+            <p style="font-size: 12px; margin-top: 10px; color: var(--text-muted);"><a href="/login" style="color: var(--accent);">Log in</a> to write a comment.</p>
+          {% endif %}
+        </details>
+      </li>
+    {% else %}
+      <li class="empty-state">No posts yet.</li>
+    {% endfor %}
+  </ol>
+
+  {% if total_pages > 1 %}
+    <nav class="pagination">
+      {% if page > 1 %}
+        <a href="?page={{ page - 1 }}" class="page-btn">« Prev</a>
+      {% endif %}
+      <span class="page-info">Page {{ page }} / {{ total_pages }}</span>
+      {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}" class="page-btn">Next »</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+
+  <section class="reply-section">
+    <h3>
+      <svg width="18" height="18" viewBox="0 0 24 24" class="icon" style="color: var(--accent);"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11Z"/></svg>
+      Reply to this thread
+    </h3>
+    {% if current_user %}
+    <form method="post" action="/thread/{{ thread['id'] }}/reply" class="card reply-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <label>Message
+        <textarea name="content" rows="4" maxlength="5000" placeholder="Write your reply... (Markdown supported)" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" required></textarea>
+      </label>
+      <div class="reply-actions">
+        <button type="submit" class="btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M2 21l21-9L2 3v7l15 2l-15 2v7Z"/></svg>
+          Post Reply
+        </button>
+      </div>
+    </form>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 32px;">
+      <p style="margin-bottom: 12px; color: var(--text-muted);">You must be logged in to reply to this thread.</p>
+      <a href="/login" class="btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg>
+        Log In to Reply
+      </a>
+    </div>
+    {% endif %}
+  </section>
+</article>
+{% endblock %}

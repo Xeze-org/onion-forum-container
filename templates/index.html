@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{# Hero section #}
+<section class="hero">
+  <h1>Welcome to Onion Forum</h1>
+  <p class="hero-sub">A private, anonymous space for open discussion. No accounts required.</p>
+</section>
+
+{# Category filter pills #}
+<nav class="categories">
+  <a href="/" class="chip {% if not cat %}active{% endif %}">
+    <svg width="14" height="14" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg>
+    All
+  </a>
+  {% for c in categories %}
+    <a href="/?cat={{ c['slug'] }}" class="chip {% if cat and cat['id']==c['id'] %}active{% endif %}">{{ c['name'] }}</a>
+  {% endfor %}
+</nav>
+
+{# Two-column layout: threads + sidebar #}
+<div class="layout">
+  <section class="main-col">
+    <div class="section-header">
+      <h2>{% if cat %}{{ cat['name'] }}{% else %}All{% endif %} Threads</h2>
+      <span class="badge">{{ threads|length }} shown</span>
+    </div>
+    <ul class="thread-list">
+      {% for t in threads %}
+        <li class="thread">
+          <div class="thread-top">
+            <div style="display: flex; gap: 8px; align-items: baseline;">
+              <a href="/thread/{{ t['id'] }}" class="title">{{ t['title'] }}</a>
+              {% if is_admin %}
+              <form method="post" action="/admin/delete_thread" onsubmit="return confirm('Delete this thread entirely?');" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+                <input type="hidden" name="thread_id" value="{{ t['id'] }}">
+                <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 0;" title="Delete Thread">
+                  <svg width="14" height="14" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+            <span class="thread-cat">{{ t['category_name'] or 'Uncategorized' }}</span>
+          </div>
+          <span class="meta">
+            <svg width="12" height="12" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M4 4h16v12H7l-3 3V4Zm2 4v2h12V8H6Zm0 4v2h8v-2H6Z"/></svg>
+            {{ t['posts_count'] }} posts
+            <span class="sep">•</span>
+            updated {{ t['last_activity_at'] | int | datetimeformat }}
+          </span>
+        </li>
+      {% else %}
+        <li class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2Zm0 14H6l-2 2V4h16v12Z"/></svg>
+          <p>No threads yet. Be the first to start a conversation!</p>
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if total_pages > 1 %}
+      <nav class="pagination">
+        {% if page > 1 %}
+          <a href="?page={{ page - 1 }}" class="page-btn">« Prev</a>
+        {% endif %}
+        <span class="page-info">Page {{ page }} / {{ total_pages }}</span>
+        {% if page < total_pages %}
+          <a href="?page={{ page + 1 }}" class="page-btn">Next »</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </section>
+
+  <aside class="sidebar">
+    {# New Thread Form in Sidebar #}
+    <div class="sidebar-card">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z"/></svg>
+        Start a Thread
+      </h3>
+      {% if current_user %}
+      <form method="post" action="/thread" class="new-thread-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <label>Title
+          <input name="title" maxlength="140" placeholder="What's on your mind?" required />
+        </label>
+        <label>Category
+          <select name="category_id">
+            {% for c in categories %}
+              <option value="{{ c['id'] }}" {% if cat and cat['id'] == c['id'] %}selected{% endif %}>{{ c['name'] }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Content
+          <textarea name="content" rows="4" maxlength="5000" placeholder="Write your post... (Markdown supported)" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" required></textarea>
+        </label>
+        <button type="submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M2 21l21-9L2 3v7l15 2l-15 2v7Z"/></svg>
+          Post Thread
+        </button>
+      </form>
+      {% else %}
+        <p style="font-size: 13px; color: var(--text-muted);">You must be logged in to post a new thread.</p>
+        <a href="/login" class="btn-primary" style="display: block; text-align: center; margin-top: 12px; padding: 10px; border-radius: 8px; background: var(--accent); color: #fff;">Log In</a>
+      {% endif %}
+    </div>
+
+    {# Recent Activity #}
+    <div class="sidebar-card">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18Zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12Z"/></svg>
+        Recent Activity
+      </h3>
+      <ul class="recent-list">
+        {% for r in recent_posts %}
+          <li>
+            <a href="/thread/{{ r['thread_id'] }}#p{{ r['post_id'] }}" class="recent-title">{{ r['thread_title'] }}</a>
+            <span class="recent-meta">{{ r['category_name'] or '' }} • {{ r['created_at'] | int | datetimeformat }}</span>
+          </li>
+        {% else %}
+          <li class="recent-empty">No activity yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if is_admin %}
+    <div class="sidebar-card">
+      <h3 style="color: #ef4444;">
+        <svg width="16" height="16" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+        Admin Portal
+      </h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Manage categories and Moderate users.</p>
+      <a href="/admin" class="btn-primary" style="display: block; text-align: center; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-size: 13px;">Open Admin Dashboard →</a>
+    </div>
+    {% endif %}
+  </aside>
+</div>
+
+{% endblock %}

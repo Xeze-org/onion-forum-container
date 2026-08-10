@@ -1,0 +1,14 @@
+services:
+  onion-forum:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: onion-forum:latest
+    container_name: onion-forum-app
+    restart: unless-stopped
+    environment:
+      - PORT=8080
+      - FORUM_DB_PATH=/data/forum.db
+      - TOR_PRIVATE_KEY_B64=${TOR_PRIVATE_KEY_B64:-}
+    volumes:
+      - ./data:/data

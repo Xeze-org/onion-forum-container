@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="admin-dashboard">
+  <div class="section-header" style="margin-bottom: 24px;">
+    <h2>Admin Dashboard</h2>
+    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Restricted Access</span>
+  </div>
+
+  <div class="card" style="margin-bottom: 24px;">
+    <h3 style="margin-bottom: 8px; color: #fff;">Registration</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+      New account registration is currently <strong>{{ 'enabled' if registration_enabled else 'disabled' }}</strong>.
+    </p>
+    <form method="post" action="/admin/set_registration">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <input type="hidden" name="enabled" value="{{ '0' if registration_enabled else '1' }}" />
+      <button type="submit" class="btn-primary">{{ 'Disable registration' if registration_enabled else 'Enable registration' }}</button>
+    </form>
+  </div>
+
+  <div class="layout">
+    <div class="main-col">
+      <div class="card" style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 12px; color: #fff;">Category Management</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Create new discussion categories or delete existing categories.</p>
+        
+        <form method="post" action="/admin/create_category" style="margin-bottom: 24px; display: flex; gap: 8px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+          <input name="name" maxlength="32" placeholder="Category name (e.g. Security)" required style="flex: 1;" />
+          <button type="submit" class="btn-primary" style="white-space: nowrap;">+ Add Category</button>
+        </form>
+
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;">Active Categories</div>
+        <ul class="recent-list">
+          {% for c in categories %}
+          <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+            <div>
+              <strong style="color: #fff; font-size: 14px;">{{ c['name'] }}</strong>
+              <span style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">/{{ c['slug'] }}</span>
+            </div>
+            {% if categories|length > 1 %}
+            <form method="post" action="/admin/delete_category" onsubmit="return confirm('Delete category {{ c['name'] }}? Threads will be re-assigned.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+              <input type="hidden" name="category_id" value="{{ c['id'] }}">
+              <button type="submit" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px;">Delete</button>
+            </form>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-card">
+        <h3 style="color: #ef4444; margin-bottom: 12px;">User Management</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Moderate registered user accounts.</p>
+        <ul class="recent-list">
+          {% for u in all_users %}
+          <li style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; font-weight: 500;">{{ u['username'] }}</span>
+            <form method="post" action="/admin/delete_user" onsubmit="return confirm('Delete user {{ u['username'] }} and all their posts?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+              <input type="hidden" name="user_id" value="{{ u['id'] }}">
+              <button type="submit" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 3px 8px; font-size: 11px; border-radius: 4px;">Delete User</button>
+            </form>
+          </li>
+          {% else %}
+            <li class="recent-empty">No other registered users.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
