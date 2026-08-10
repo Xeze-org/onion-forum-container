@@ -1,55 +1,75 @@
-# Onion Forum 🧅
+# Onion Forum
 
-Lightweight, privacy-focused forum designed for Tor v3 services. Built with Rust, Axum, Tokio, and SQLite with a server-rendered, zero-JavaScript interface.
+A lightweight, self-hosted forum for Tor. The backend is written in Rust with Axum and SQLite, and the interface uses server-rendered HTML and CSS without JavaScript.
 
----
+## Features
 
-## 🚀 Quick Start
+- Tor v3 onion service included in the Docker image
+- Accounts, categories, threads, replies, and comments
+- Admin management for users, categories, threads, and registration
+- CAPTCHA and login rate limiting
+- CSRF protection, expiring sessions, HTML sanitization, and strict browser headers
+- Persistent forum data and Tor identity in one directory
 
-### 1. Run via Docker Compose (Recommended)
+## Start
+
 ```bash
 docker compose up -d --build
 ```
 
-On the first start, Tor generates the onion-service identity. The container preserves the raw key under `./data/tor` and automatically writes its base64 representation to `TOR_PRIVATE_KEY_B64` in `./data/.env`. The key value is never printed to the container logs.
+Follow the startup logs to see the onion address:
 
-Keep the complete `data` directory private and back it up regularly. It contains the forum database and onion identity.
-
-Get your live `.onion` address:
 ```bash
-docker exec onion-forum-app cat /data/tor/hs/hostname
+docker compose logs -f onion-forum
 ```
 
-### 2. Run via Rust (`cargo`)
-```bash
-cargo run
+Press `Ctrl+C` after the address appears. The container will continue running.
+
+## Data
+
+Everything is stored under `./data`:
+
+```text
+data/
+|-- forum.db
+|-- .env
+`-- tor/
 ```
-Access locally at `http://localhost:8080`.
 
----
+The first start generates a Tor identity. Its raw key remains in `data/tor`, while a base64 backup is saved as `TOR_PRIVATE_KEY_B64` in `data/.env`. The private key is never printed in logs.
 
-## 🛠 Features
+Back up the complete `data` directory to preserve the forum and its onion address. Never publish this directory or its private keys.
 
-- **Privacy First:** Server-rendered UI with zero external JS dependencies.
-- **SQLite Database:** Single-file persistent storage (`forum.db`).
-- **CSRF & Security:** Strict CSP, HTML sanitization, and rate limiting.
-- **Built-in Tor Layer:** Auto-packages Tor v3 hidden service capabilities.
+## Commands
 
----
+```bash
+# Stop
+docker compose down
 
-## 📚 Documentation
+# Start again
+docker compose up -d
 
-Detailed documentation and guides are available in the [`docs/`](file:///e:/cyber/onion-forum-web/docs) directory:
+# View logs
+docker compose logs -f onion-forum
 
-- 🔑 **[Tor Keys & Onion Setup](file:///e:/cyber/onion-forum-web/docs/tor-keys-and-onion-setup.md):** How to generate static/vanity `.onion` keys and set `TOR_PRIVATE_KEY_B64`.
-- 💻 **[Commands & CLI Reference](file:///e:/cyber/onion-forum-web/docs/commands-and-cli-reference.md):** Complete reference for Cargo, Docker, backups, health checks, and Akash Web3 deployment.
+# Read the onion hostname
+docker compose exec onion-forum cat /data/tor/hs/hostname
+```
 
----
+## Configuration
 
-## 📜 Environment Variables
-
-| Variable | Default | Description |
+| Variable | Default | Purpose |
 |---|---|---|
-| `PORT` | `8080` | Application HTTP listening port |
-| `FORUM_DB_PATH` | `/data/forum.db` | Absolute path to SQLite storage file |
-| `TOR_PRIVATE_KEY_B64` | *Optional* | Base64-encoded static Tor Ed25519 key |
+| `PORT` | `8080` | Internal forum HTTP port |
+| `FORUM_DB_PATH` | `/data/forum.db` | SQLite database path |
+| `TOR_PRIVATE_KEY_B64` | generated | Optional existing Tor identity to import |
+
+To import an existing base64 key, copy `.env.example` to `.env`, add the key, and start Compose. New installations do not require a root `.env` file.
+
+## Contributing
+
+Issues and pull requests are welcome. Keep changes lightweight, privacy-focused, and usable without JavaScript.
+
+## License
+
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
