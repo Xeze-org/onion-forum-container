@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: onion-forum:latest
+    image: xeze/onion-forum:latest
     container_name: onion-forum-app
     restart: unless-stopped
     environment:
